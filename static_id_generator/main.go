@@ -11,7 +11,10 @@ import (
 	"github.com/juju/errors"
 )
 
-const maxLen = 4
+const (
+	serverID = "blue"
+	maxLen   = 4
+)
 
 // 36 characters
 var alphabet = []string{
@@ -23,7 +26,7 @@ func main() {
 	start := time.Now()
 	rand.Seed(time.Now().UnixNano())
 
-	count, err := generateStaticIDs(alphabet, maxLen)
+	count, err := generateStaticIDs(alphabet)
 	if err != nil {
 		log.Fatal(errors.Annotate(err, "generating static IDs failed"))
 	}
@@ -31,7 +34,7 @@ func main() {
 	fmt.Println(fmt.Sprintf("%v IDs generated in %v", count, time.Since(start)))
 }
 
-func generateStaticIDs(alphabet []string, maxLen int) (int, error) {
+func generateStaticIDs(alphabet []string) (int, error) {
 	ids := generate(alphabet, maxLen)
 
 	f, err := os.Create("generated_static_ids.csv")
@@ -45,8 +48,12 @@ func generateStaticIDs(alphabet []string, maxLen int) (int, error) {
 	}()
 
 	w := bufio.NewWriter(f)
+	if _, err := w.WriteString("static_id;server_id\n"); err != nil {
+		return 0, errors.Annotate(err, "writing header failed")
+	}
+
 	for _, n := range ids {
-		if _, err := w.WriteString(fmt.Sprintf("%s\n", n)); err != nil {
+		if _, err := w.WriteString(fmt.Sprintf("%s;%s\n", n, serverID)); err != nil {
 			return 0, errors.Annotate(err, "writing static ID failed")
 		}
 	}
